@@ -21,19 +21,19 @@ public class Transaction {
         return transactionId;
     }
 
-    public Account getPayer(){
+    public Account getPayer() {
         return payer;
     }
 
-    public Account getReceiver(){
+    public Account getReceiver() {
         return receiver;
     }
 
-    public int getAmount(){
+    public int getAmount() {
         return amount;
     }
 
-    public int getFee(){
+    public int getFee() {
         return fee;
     }
 

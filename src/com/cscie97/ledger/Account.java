@@ -4,16 +4,16 @@ public class Account {
     private String address;
     private int balance;
 
-    public Account(String address){
+    public Account(String address) {
         this.address = address;
         this.balance = 0;
     }
 
-    public int getBalance(){
+    public int getBalance() {
         return balance;
     }
 
-    public String getAddress(){
+    public String getAddress() {
         return address;
     }
 

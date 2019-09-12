@@ -8,7 +8,7 @@ public class Block {
     private String previousHash;
     private String hash;
     private ArrayList<Transaction> transactionList;
-    private HashMap<String, Integer> accountBalanceMap;
+    private HashMap<String, Account> accountBalanceMap;
     private Block previousBlock;
     private int numberOfTransactions;
     private boolean isFinalized;
@@ -18,11 +18,10 @@ public class Block {
         this.previousHash = previousHash;
         this.hash = hash;
         this.previousBlock = previousBlock;
-
+        transactionList = new ArrayList<Transaction>();
+        accountBalanceMap = new HashMap<String, Account>();
         numberOfTransactions = 0;
         isFinalized = false;
-        transactionList = new ArrayList<Transaction>();
-        accountBalanceMap = previousBlock.getAccountBalanceMap();
     }
 
     public Block(){
@@ -42,8 +41,12 @@ public class Block {
         isFinalized = true;
     }
 
-    public HashMap<String, Integer> getAccountBalanceMap(){
+    public HashMap<String, Account> getAccountBalanceMap(){
         return accountBalanceMap;
+    }
+
+    public void setAccountBalanceMap(HashMap<String, Account> accountBalanceMap){
+        this.accountBalanceMap = accountBalanceMap;
     }
 
     public ArrayList<Transaction> getTransactionList(){
@@ -64,5 +67,9 @@ public class Block {
 
     public String getPreviousHash(){
         return previousHash;
+    }
+
+    public Block getPreviousBlock(){
+        return previousBlock;
     }
 }
