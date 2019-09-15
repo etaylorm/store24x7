@@ -1,130 +1,161 @@
 package com.cscie97.ledger;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 public class Ledger {
     private String name;
     private String description;
     private String seed;
-    private HashMap<String, Block> blockMap;
+    private HashMap<Integer, Block> blockMap;
     private Block genesisBlock;
-    private Block currentBlock;
+    private Block currentBlock; // is this permitted?
+    private HashMap<String, Integer> accountMap;
 
-    public Ledger(String name, String description, String seed) throws NoSuchAlgorithmException{
+    Ledger(String name, String description, String seed) {
         this.name = name;
         this.description = description;
         this.seed = seed;
-        blockMap = new HashMap<String, Block>();
+        blockMap = new HashMap<Integer, Block>();
+        accountMap = new HashMap<String, Integer>();
 
         createGenesisBlock();
-        initializeMasterAccount();
+        createMasterAccount();
     }
 
-    private void createGenesisBlock() throws NoSuchAlgorithmException {
-        genesisBlock = new Block(1, null, makeHash(seed, 1, name, description), new Block());
+    private void createGenesisBlock() {
+        genesisBlock = new Block(0, null, new Block(), new HashMap<String, Account>());
+        blockMap.put(genesisBlock.getBlockNumber(), genesisBlock);
         currentBlock = genesisBlock;
-        blockMap.put(genesisBlock.getHash(), genesisBlock);
     }
 
-    private void initializeMasterAccount(){
-        createAccount("master");
-        HashMap<String, Account> accountBalancesMap = currentBlock.getAccountBalanceMap();
-        Account master = accountBalancesMap.get("master");
-        master.updateBalance(Integer.MAX_VALUE);
-        accountBalancesMap.put("master", master);
-
-        currentBlock.setAccountBalanceMap(accountBalancesMap);
+    private void createMasterAccount(){
+        Account master = new Account("master");
+        accountMap.put("master", Integer.MAX_VALUE);
     }
 
-    public String createAccount(String accountId){
-        Account account = new Account(accountId);
-        HashMap<String, Account> accountBalancesMap = currentBlock.getAccountBalanceMap();
-        accountBalancesMap.put(accountId, account);
-        currentBlock.setAccountBalanceMap(accountBalancesMap);
-        return accountId;
+    String createAccount(String accountId) throws LedgerException {
+        if (!accountMap.containsKey(accountId)) {
+            // create new account
+            accountMap.put(accountId, 0);
+            return accountId;
+        } else {
+            throw new LedgerException("create-account", "account already exists");
+        }
     }
 
-    public String processTransaction(Transaction transaction) throws NoSuchAlgorithmException {
-        // add code to validate transaction
+    String processTransaction(Transaction transaction) throws LedgerException {
+        // validate transaction first
+        String payerAddress = transaction.getPayer().getAddress();
+        String receiverAddress = transaction.getReceiver().getAddress();
+
+        try {
+            getTransaction(transaction.getTransactionId());
+            throw new LedgerException("process-transaction", "transaction ID already exists");
+        } catch (LedgerException l){ }
+
+        // check that both accounts exist
+        if (accountMap.get(payerAddress) == null
+            & accountMap.get(receiverAddress) == null) {
+            throw new LedgerException("process-transaction", "account does not exist");
+        }
+        // check that the payer has enough cash for the amount and the fee
+        else if (accountMap.get(payerAddress) < transaction.getAmount() + transaction.getFee()) {
+            throw new LedgerException("process-transaction", "payer account does not have sufficient funds");
+        }
+        // check that the fee is greater than 10
+        else if (transaction.getFee() < 10) {
+            throw new LedgerException("process-transaction", "fee must be more than 10");
+        }
+
+        // if the transaction is valid, update payer, receiver, and master accounts
+        else {
+            accountMap.put(payerAddress, accountMap.get(payerAddress) - (transaction.getAmount() + transaction.getFee()));
+            accountMap.put(receiverAddress, accountMap.get(receiverAddress) + transaction.getAmount());
+            accountMap.put("master", accountMap.get("master") + transaction.getFee());
+        }
 
         currentBlock.addTransaction(transaction);
-        updateAccounts(transaction);
 
-        if (currentBlock.getIsFinalized()){
+        if (currentBlock.getTransactionList().size() == 10){
             addBlockToChain();
         }
 
         return transaction.getTransactionId();
     }
 
-    private void updateAccounts(Transaction transaction){
-        // get the amount of money that changed hands: amount + fee
-        int moneyTransferred = transaction.getAmount() + transaction.getFee();
+    private void addBlockToChain() throws LedgerException {
+        // close out current block by setting the hash
+        currentBlock.setHash(makeHash(seed, currentBlock.getBlockNumber(), currentBlock.getPreviousHash(),
+                currentBlock.getPreviousBlock(), currentBlock.getTransactionList(),
+                currentBlock.getAccountBalanceMap()));
 
-        // get the unique identifiers for the payer and receiver
-        String payer_address = transaction.getPayer().getAddress();
-        String receiver_address = transaction.getReceiver().getAddress();
+        // update the account balance map according to the ledger's account balance map
+        HashMap<String, Account> updatedAccountBalanceMap = updateAccountBalances();
 
-        HashMap<String, Account> accountBalancesMap = currentBlock.getAccountBalanceMap();
-        // update the payer and receiver stored in the accounts map
-        Account payer = accountBalancesMap.get(payer_address);
-        Account receiver = accountBalancesMap.get(receiver_address);
+        // create a new block
+        int newBlockNumber = currentBlock.getBlockNumber() + 1;
+        Block newBlock = new Block(newBlockNumber, currentBlock.getHash(), currentBlock, updatedAccountBalanceMap);
 
-        payer.updateBalance(moneyTransferred * -1);
-        receiver.updateBalance(moneyTransferred);
-
-        accountBalancesMap.put(payer_address, payer);
-        accountBalancesMap.put(receiver_address, receiver);
-
-        currentBlock.setAccountBalanceMap(accountBalancesMap);
+        blockMap.put(newBlockNumber, newBlock);
+        currentBlock = newBlock;
     }
 
-    private void addBlockToChain() throws NoSuchAlgorithmException {
+    private HashMap<String, Account> updateAccountBalances() {
+        HashMap<String, Account> updatedAccountBalanceMap = new HashMap<String, Account>();
+
+        for (String accountId : accountMap.keySet()) {
+            Account newAccount = new Account(accountId);
+            newAccount.updateBalance(accountMap.get(accountId));
+            updatedAccountBalanceMap.put(accountId, newAccount);
+        }
+        return updatedAccountBalanceMap;
+    }
+
+    // should the account balance map be copied in at the beginning of making the block?
+    int getAccountBalance(String address) throws LedgerException {
         try {
-            int newBlockNumber = currentBlock.getBlockNumber() + 1;
-            HashMap<String, Account> currentAccountBalances = currentBlock.getAccountBalanceMap();
-            Block newBlock = new Block(newBlockNumber, currentBlock.getHash(), makeHash(seed, newBlockNumber, name, description), currentBlock);
-            blockMap.put(newBlock.getHash(), newBlock);
-            newBlock.setAccountBalanceMap(currentAccountBalances);
-            currentBlock = newBlock;
-
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace(System.err);
+            return currentBlock.getAccountBalanceMap().get(address).getBalance();
+        }
+        catch (NullPointerException e) {
+            throw new LedgerException("get-account-balance", "account has no committed balance");
         }
     }
 
-    public int getAccountBalance(String address){
-        Block lastCompletedBlock = blockMap.get(currentBlock.getPreviousHash());
-        if (lastCompletedBlock != null){
-            return lastCompletedBlock.getAccountBalanceMap().get(address).getBalance();
-        } else {
-            return 0;
+    // comment above all relevant here
+    HashMap<String, Account> getAccountBalances() throws LedgerException {
+        if (currentBlock != genesisBlock) {
+            return currentBlock.getAccountBalanceMap();
+        }
+        else {
+            throw new LedgerException("get-account-balances", "no balances have been committed");
         }
     }
 
-    private HashMap<String, Account> getAccountBalances(){
-        Block lastCompletedBlock = blockMap.get(currentBlock.getPreviousHash());
-        return lastCompletedBlock.getAccountBalanceMap();
+    Block getBlock(int blockNumber){
+        return blockMap.get(blockNumber);
     }
 
-    public Block getBlock(String blockHash){
-        return blockMap.get(blockHash);
-    }
-
-    public Transaction getTransaction(String transactionId){
-        return getTransactionHelper(transactionId, currentBlock);
+    Transaction getTransaction(String transactionId) throws LedgerException {
+        Transaction transaction = getTransactionHelper(transactionId, currentBlock);
+        if (transaction == null) {
+            throw new LedgerException("get-transaction", "no transaction with that ID found");
+        }
+        else {
+            return transaction;
+        }
     }
 
     private Transaction getTransactionHelper(String transactionId, Block thisBlock){
         ArrayList<Transaction> transactionList = thisBlock.getTransactionList();
-        for (int i = 0; i < transactionList.size(); i++) {
-            if (transactionList.get(i).getTransactionId().equals(transactionId)) {
-                return transactionList.get(i);
+        for (Transaction transaction : transactionList) {
+            if (transaction.getTransactionId().equals(transactionId)) {
+                return transaction;
             }
         }
         if (thisBlock.equals(genesisBlock)) {
@@ -134,24 +165,27 @@ public class Ledger {
         }
     }
 
-    private void validate(){
-        // starting with current block and looping backwards
-            // check that account balances equal max value
-
-            // check that completed blocks have 10 transactions
-
-            // check that we end up back at the genesis block
+    void validate() throws LedgerException {
+        validateHelper(currentBlock.getPreviousBlock());
     }
 
-    private String makeHash(String seed, int blockNumber, String name, String description) throws NoSuchAlgorithmException {
+    private void validateHelper(Block thisBlock) throws LedgerException {
+        if (!thisBlock.equals(genesisBlock)){
+            thisBlock.validate();
+            validateHelper(thisBlock.getPreviousBlock());
+        }
+    }
+
+    private String makeHash(String seed, int blockNumber, String previousHash, Block previousBlock,
+                            ArrayList<Transaction> transactions, HashMap<String, Account> accountBalanceMap)
+            throws LedgerException {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String text = seed + blockNumber + name + description;
+            String text = seed + blockNumber + previousHash + previousBlock + transactions + accountBalanceMap;
             byte[] hash = digest.digest(text.getBytes(StandardCharsets.UTF_8));
             return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace(System.err);
-            return null;
+            throw new LedgerException("process-transaction", "unable to create new block");
         }
     }
 }

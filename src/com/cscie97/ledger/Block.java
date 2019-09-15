@@ -1,75 +1,74 @@
 package com.cscie97.ledger;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.ArrayList;
 
-public class Block {
+class Block {
     private int blockNumber;
     private String previousHash;
     private String hash;
     private ArrayList<Transaction> transactionList;
     private HashMap<String, Account> accountBalanceMap;
     private Block previousBlock;
-    private int numberOfTransactions;
-    private boolean isFinalized;
 
-    public Block(int blockNumber, String previousHash, String hash, Block previousBlock){
+    Block(int blockNumber, String previousHash, Block previousBlock, HashMap<String, Account> accountBalanceMap){
         this.blockNumber = blockNumber;
         this.previousHash = previousHash;
-        this.hash = hash;
         this.previousBlock = previousBlock;
+        this.accountBalanceMap = accountBalanceMap;
         transactionList = new ArrayList<Transaction>();
-        accountBalanceMap = new HashMap<String, Account>();
-        numberOfTransactions = 0;
-        isFinalized = false;
     }
 
-    public Block(){
-    }
+    Block(){ }
 
-    public void addTransaction(Transaction transaction){
+    void addTransaction(Transaction transaction) {
         transactionList.add(transaction);
-        numberOfTransactions += 1;
-
-        if (numberOfTransactions == 10){
-            finalizeBlock();
-        }
     }
 
-    private void finalizeBlock(){
-        // update account balance map here
-        isFinalized = true;
-    }
-
-    public HashMap<String, Account> getAccountBalanceMap(){
+    HashMap<String, Account> getAccountBalanceMap(){
         return accountBalanceMap;
     }
 
-    public void setAccountBalanceMap(HashMap<String, Account> accountBalanceMap){
+    void setAccountBalanceMap(HashMap<String, Account> accountBalanceMap){
         this.accountBalanceMap = accountBalanceMap;
     }
 
-    public ArrayList<Transaction> getTransactionList(){
+    ArrayList<Transaction> getTransactionList(){
         return transactionList;
     }
 
-    public boolean getIsFinalized(){
-        return isFinalized;
-    }
-
-    public int getBlockNumber(){
+    int getBlockNumber(){
         return blockNumber;
     }
 
-    public String getHash(){
+    String getHash(){
         return hash;
     }
 
-    public String getPreviousHash(){
+    void setHash(String hash){
+        this.hash = hash;
+    }
+
+    String getPreviousHash(){
         return previousHash;
     }
 
-    public Block getPreviousBlock(){
+    Block getPreviousBlock(){
         return previousBlock;
     }
+
+    void validate() throws LedgerException {
+        int accountSum = 0;
+        for (Account account : accountBalanceMap.values()){
+            accountSum += account.getBalance();
+        }
+        if (accountSum != Integer.MAX_VALUE | transactionList.size() != 10){
+            throw new LedgerException("validate", "block is not valid");
+        }
+    }
+
 }

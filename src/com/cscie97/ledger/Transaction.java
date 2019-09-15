@@ -1,6 +1,6 @@
 package com.cscie97.ledger;
 
-public class Transaction {
+class Transaction {
     private String transactionId;
     private int amount;
     private int fee;
@@ -8,7 +8,7 @@ public class Transaction {
     private Account payer;
     private Account receiver;
 
-    public Transaction(String transactionId, int amount, int fee, String payload, Account payer, Account receiver) {
+    Transaction(String transactionId, int amount, int fee, String payload, Account payer, Account receiver) {
         this.transactionId = transactionId;
         this.amount = amount;
         this.fee = fee;
@@ -17,23 +17,23 @@ public class Transaction {
         this.receiver = receiver;
     }
 
-    public String getTransactionId() {
+    String getTransactionId() {
         return transactionId;
     }
 
-    public Account getPayer() {
+    Account getPayer() {
         return payer;
     }
 
-    public Account getReceiver() {
+    Account getReceiver() {
         return receiver;
     }
 
-    public int getAmount() {
+    int getAmount() {
         return amount;
     }
 
-    public int getFee() {
+    int getFee() {
         return fee;
     }
 
