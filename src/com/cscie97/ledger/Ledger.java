@@ -128,13 +128,14 @@ public class Ledger {
     }
 
     // comment above all relevant here
-    HashMap<String, Account> getAccountBalances() throws LedgerException {
-        if (currentBlock != genesisBlock) {
-            return currentBlock.getAccountBalanceMap();
+    HashMap<String, Integer> getAccountBalances() throws LedgerException {
+        HashMap<String, Integer> balanceMap = new HashMap<String, Integer>();
+        HashMap<String, Account> accountBalanceMap = currentBlock.getAccountBalanceMap();
+
+        for (String accountId : accountBalanceMap.keySet()) {
+            balanceMap.put(accountId, accountBalanceMap.get(accountId).getBalance());
         }
-        else {
-            throw new LedgerException("get-account-balances", "no balances have been committed");
-        }
+        return balanceMap;
     }
 
     Block getBlock(int blockNumber){
@@ -172,8 +173,16 @@ public class Ledger {
     private void validateHelper(Block thisBlock) throws LedgerException {
         if (!thisBlock.equals(genesisBlock)){
             thisBlock.validate();
+            validateHash(thisBlock.getPreviousBlock(), thisBlock.getPreviousHash());
             validateHelper(thisBlock.getPreviousBlock());
         }
+    }
+
+    private boolean validateHash(Block block, String hash) throws LedgerException {
+        return (hash.equals(
+                makeHash(seed, block.getBlockNumber(), block.getPreviousHash(),
+                        block.getPreviousBlock(), block.getTransactionList(),
+                        block.getAccountBalanceMap())));
     }
 
     private String makeHash(String seed, int blockNumber, String previousHash, Block previousBlock,
