@@ -9,30 +9,30 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CommandProcessor {
-    // should you be able to make multiple ledgers?
     private static Ledger ledger;
 
-    public static void processCommandFile(File file_path) {
+    public static void processCommandFile(File file_path) throws CommandProcessorException {
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file_path))) {
             String command = bufferedReader.readLine();
             int lineNumber = 0;
             while (command != null) {
                 lineNumber ++;
+                System.out.println(command);
                 if (!command.startsWith("#") && command.length() > 0) {
                     try {
                         processCommand(command);
-                    } catch (CommandProcessorException c) {
-                        System.out.println(c);
+                    } catch (CommandProcessorException e) {
+                        System.out.println(e);
+                        throw new CommandProcessorException(e.getCommand(), e.getReason(), lineNumber);
                     }
                 }
                 command = bufferedReader.readLine();
             }
         } catch (IOException e) {
-            System.out.println("[ERROR]: " + e);
+            throw new CommandProcessorException("process from file", "IO exception");
         }
     }
 
-    // process-transaction 1 amount 1000 fee 10 payload "fund account" payer master receiver mary
     private static void processCommand(String command) throws CommandProcessorException {
         ArrayList<String> args = new ArrayList<>();
         Pattern regex = Pattern.compile("[^\\s\"']+|\"[^\"]*\"|'[^']*'");
@@ -41,7 +41,6 @@ public class CommandProcessor {
             args.add(regexMatcher.group().toLowerCase());
         }
         String action = args.get(0);
-        System.out.println(command);
         try {
             switch (action) {
                 case ("create-ledger"):
@@ -53,13 +52,13 @@ public class CommandProcessor {
                     break;
                 case ("process-transaction"):
                     String transactionId = ledger.processTransaction(
-                                                new Transaction(args.get(1),
-                                                        Integer.parseInt(args.get(3)),
-                                                        Integer.parseInt(args.get(5)),
-                                                        args.get(7),
-                                                        new Account(args.get(9)),
-                                                        new Account(args.get(11))));
-                    System.out.println("Transaction with id " + transactionId + " committed");
+                            new Transaction(args.get(1),
+                                    Integer.parseInt(args.get(3)),
+                                    Integer.parseInt(args.get(5)),
+                                    args.get(7),
+                                    new Account(args.get(9)),
+                                    new Account(args.get(11))));
+                    System.out.println("Transaction with id " + transactionId + " processed");
                     break;
                 case ("get-account-balance"):
                     System.out.println(ledger.getAccountBalance(args.get(1)));
@@ -68,8 +67,7 @@ public class CommandProcessor {
                     System.out.println(ledger.getAccountBalances());
                     break;
                 case ("get-block"):
-                    ledger.getBlock(Integer.parseInt(args.get(1)));
-                    System.out.println(args.get(1));
+                    System.out.print(ledger.getBlock(Integer.parseInt(args.get(1))).getInfoString());
                     break;
                 case ("get-transaction"):
                     System.out.println(ledger.getTransaction(args.get(1)));
@@ -78,11 +76,10 @@ public class CommandProcessor {
                     ledger.validate();
                     break;
                 default:
-                    // this needs to be fixed
-                    throw new CommandProcessorException(action, "action not found");
+                    throw new CommandProcessorException(action, "supplied command not found");
             }
-        } catch (LedgerException l) {
-            System.out.println(l);
+        } catch (LedgerException e) {
+            System.out.println(e);
         }
     }
 }

@@ -9,6 +9,11 @@ class Account {
         this.balance = 0;
     }
 
+    Account(String address, int balance){
+        this.address = address;
+        this.balance = balance;
+    }
+
     int getBalance() {
         return balance;
     }

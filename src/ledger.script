@@ -9,7 +9,6 @@ create-account bill
 create-account susan
 create-account jack
 
-
 # get-account-balance <account-id>
 # expect error since not committed to a block
 get-account-balance mary

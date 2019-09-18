@@ -37,4 +37,9 @@ class Transaction {
         return fee;
     }
 
+    public String toString(){
+        return "Transaction ID: " + transactionId + "; Payer: " + payer.getAddress() + "; Amount: " + amount
+                + "; Payload: " + payload + "; Receiver: " + receiver.getAddress() + "; Fee: " + fee;
+    }
+
 }
