@@ -33,6 +33,8 @@ get-account-balances
 
 get-block 1
 
+get-block 0
+
 get-account-balance evelyn
 
 # expect error here
@@ -43,6 +45,9 @@ get-transaction 20
 
 # attempt to process a transaction between two accounts that do not exist
 process-transaction 11 amount 300 fee 10 payload "fund account" payer bob receiver mary
+
+# attempt to process a transaction between one account that does exist and one that doesn't
+process-transaction 11 amount 30 fee 10 payload "transfer" payer bob receiver jonah
 
 process-transaction 11 amount 500 fee 10 payload "fund account" payer evelyn receiver jonah
 

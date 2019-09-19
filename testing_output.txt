@@ -1,0 +1,120 @@
+# create-ledger <name> description <description> seed <seed> 
+Create-ledger test description "test ledger" seed "cambridge"
+ledger test created
+
+# should be able to validate the blockchain even on the first block
+validate
+blockchain validated
+
+create-account evelyn
+account with ID evelyn created
+
+# should raise an error
+create-account evelyn
+com.cscie97.ledger.LedgerException: create-account error: account already exists
+
+create-account jonah
+account with ID jonah created
+
+# process-transaction <transaction-id> amount <amount> fee <fee> payload <payload> payer <account-address> receiver <account-address>
+process-transaction 1 amount 100 fee 10 payload "fund account" payer master receiver evelyn
+transaction with ID: 1 created
+process-transaction 2 amount 300 fee 10 payload "fund account" payer master receiver jonah
+transaction with ID: 2 created
+
+# expect error due to duplicate transaction id
+process-transaction 2 amount 300 fee 100 payload "fund account" payer master receiver evelyn
+com.cscie97.ledger.LedgerException: process-transaction error: transaction ID already exists
+process-transaction 3 amount 300 fee 20 payload "fund account" payer master receiver evelyn
+transaction with ID: 3 created
+process-transaction 4 amount 300 fee 50 payload "fund account" payer master receiver evelyn
+transaction with ID: 4 created
+process-transaction 5 amount 300 fee 70 payload "fund account" payer master receiver evelyn
+transaction with ID: 5 created
+process-transaction 6 amount 300 fee 20 payload "fund account" payer master receiver evelyn
+transaction with ID: 6 created
+process-transaction 7 amount 300 fee 10 payload "fund account" payer master receiver evelyn
+transaction with ID: 7 created
+process-transaction 8 amount 300 fee 130 payload "fund account" payer master receiver evelyn
+transaction with ID: 8 created
+process-transaction 9 amount 300 fee 1325 payload "fund account" payer master receiver evelyn
+transaction with ID: 9 created
+
+get-account-balances
+{}
+
+process-transaction 10 amount 300 fee 4320 payload "fund account" payer master receiver evelyn
+transaction with ID: 10 created
+
+get-account-balances
+{jonah=300, evelyn=2500, master=2147480847}
+
+get-block 1
+Block number: 1; Number of transactions: 10 Transactions: [Transaction ID: 1; Payer: master; Amount: 100; Payload: "fund account"; Receiver: evelyn; Fee: 10, Transaction ID: 2; Payer: master; Amount: 300; Payload: "fund account"; Receiver: jonah; Fee: 10, Transaction ID: 3; Payer: master; Amount: 300; Payload: "fund account"; Receiver: evelyn; Fee: 20, Transaction ID: 4; Payer: master; Amount: 300; Payload: "fund account"; Receiver: evelyn; Fee: 50, Transaction ID: 5; Payer: master; Amount: 300; Payload: "fund account"; Receiver: evelyn; Fee: 70, Transaction ID: 6; Payer: master; Amount: 300; Payload: "fund account"; Receiver: evelyn; Fee: 20, Transaction ID: 7; Payer: master; Amount: 300; Payload: "fund account"; Receiver: evelyn; Fee: 10, Transaction ID: 8; Payer: master; Amount: 300; Payload: "fund account"; Receiver: evelyn; Fee: 130, Transaction ID: 9; Payer: master; Amount: 300; Payload: "fund account"; Receiver: evelyn; Fee: 1325, Transaction ID: 10; Payer: master; Amount: 300; Payload: "fund account"; Receiver: evelyn; Fee: 4320]
+
+get-block 0
+com.cscie97.ledger.LedgerException: get-block error: block 0 not exist
+
+get-account-balance evelyn
+2500
+
+# expect error here
+get-account-balance mary
+com.cscie97.ledger.LedgerException: get-account-balance error: account has no committed balance
+
+# attempt to get a transaction that does not exist
+get-transaction 20
+null
+
+# attempt to process a transaction between two accounts that do not exist
+process-transaction 11 amount 300 fee 10 payload "fund account" payer bob receiver mary
+com.cscie97.ledger.LedgerException: process-transaction error: account does not exist
+
+# attempt to process a transaction between one account that does exist and one that doesn't
+process-transaction 11 amount 30 fee 10 payload "transfer" payer bob receiver jonah
+com.cscie97.ledger.LedgerException: process-transaction error: account does not exist
+
+process-transaction 11 amount 500 fee 10 payload "fund account" payer evelyn receiver jonah
+transaction with ID: 11 created
+
+create-account michael
+account with ID michael created
+
+# should have no balance
+get-account-balance michael
+com.cscie97.ledger.LedgerException: get-account-balance error: account has no committed balance
+
+# get a transaction from the previous block
+get-transaction 1
+Transaction ID: 1; Payer: master; Amount: 100; Payload: "fund account"; Receiver: evelyn; Fee: 10
+
+process-transaction 12 amount 20 fee 10 payload "uber" payer evelyn receiver michael
+transaction with ID: 12 created
+process-transaction 13 amount 20 fee 10 payload "uber" payer evelyn receiver michael
+transaction with ID: 13 created
+process-transaction 14 amount 20 fee 10 payload "uber" payer evelyn receiver michael
+transaction with ID: 14 created
+process-transaction 15 amount 20 fee 10 payload "uber" payer evelyn receiver michael
+transaction with ID: 15 created
+process-transaction 16 amount 20 fee 10 payload "uber" payer evelyn receiver michael
+transaction with ID: 16 created
+process-transaction 17 amount 20 fee 10 payload "uber" payer evelyn receiver michael
+transaction with ID: 17 created
+process-transaction 18 amount 20 fee 10 payload "uber" payer evelyn receiver michael
+transaction with ID: 18 created
+process-transaction 19 amount 20 fee 10 payload "uber" payer evelyn receiver michael
+transaction with ID: 19 created
+process-transaction 20 amount 20 fee 10 payload "uber" payer evelyn receiver michael
+transaction with ID: 20 created
+
+# show all account balances
+get-account-balances 
+{michael=180, jonah=800, evelyn=1720, master=2147480947}
+
+# this transaction should fail since it exceeds the account balance for michael
+process-transaction 21 amount 5000 fee 10 payload "food" payer michael receiver evelyn
+com.cscie97.ledger.LedgerException: process-transaction error: payer account does not have sufficient funds
+
+# validate the state of the blockchain
+Validate
+blockchain validated

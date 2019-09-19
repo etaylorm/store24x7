@@ -3,6 +3,10 @@ import com.cscie97.ledger.CommandProcessor;
 import com.cscie97.ledger.CommandProcessorException;
 import java.io.File;
 
+/**
+ * Test driver for the blockchain ledger
+ * Accepts command file to be processed by the command processor
+ */
 public class TestDriver {
     public static void main(String[] args) throws CommandProcessorException {
         // get file name from command line

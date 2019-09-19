@@ -1,5 +1,9 @@
 package com.cscie97.ledger;
 
+/**
+ * Exception thrown by the blockchain ledger
+ * Has action and reason properties
+ */
 class LedgerException extends Exception {
     private String action;
     private String reason;
@@ -8,11 +12,4 @@ class LedgerException extends Exception {
         super(action + " error: " + reason);
     }
 
-    String getAction(){
-        return action;
-    }
-
-    String getReason(){
-        return reason;
-    }
 }
