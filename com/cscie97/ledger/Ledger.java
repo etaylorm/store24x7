@@ -12,7 +12,7 @@ import java.security.NoSuchAlgorithmException;
  * transactions, creating Accounts, creating Blocks,
  * and validating the state of the blockchain
  */
-class Ledger {
+public class Ledger implements LedgerInterface {
     private String name;
     private String description;
     private String seed;
@@ -20,7 +20,7 @@ class Ledger {
     private Block genesisBlock;
     private Block currentBlock;
 
-    Ledger(String name, String description, String seed) {
+    public Ledger(String name, String description, String seed) {
         // provided details of the ledger
         this.name = name;
         this.description = description;
@@ -54,7 +54,7 @@ class Ledger {
      * @return accountId for successfully created account
      * @throws LedgerException if the account already exists
      */
-    String createAccount(String accountId) throws LedgerException {
+    public String createAccount(String accountId) throws LedgerException {
         if (currentBlock.getPendingAccountBalanceMap().get(accountId) == null) {
             Account account = new Account(accountId);
             currentBlock.addAccountPendingAccountBalanceMap(account);
@@ -122,13 +122,41 @@ class Ledger {
         // add the validated transaction to the current block
         currentBlock.addTransaction(transaction);
 
-        // if the current block now has 10 transactions, close the block and add a new block
+        // if the current block now has 1 transactions, close the block and add a new block
         // to the chain
-        if (currentBlock.getTransactionList().size() == 10){
+        if (currentBlock.getTransactionList().size() == 1){
             addBlockToChain();
         }
 
         return transaction.getTransactionId();
+    }
+
+    /**
+     * Public method to add a transaction to the blockchain. This method takes the amount, the transaction id,
+     * the fee, and the accoundIds of the payer and receiver and creates a transaction object. This method
+     * encapsulates the creation of the transaction so as to not expose this detail of the blockchain's
+     * implementation to interface users
+     * @param transactionId unique identifier
+     * @param amount amount to be transferred
+     * @param fee fee to be paid to the master account (must be >10)
+     * @param payload message
+     * @param payerId accountId of the payer
+     * @param receiverId accountId of the reciever
+     * @throws LedgerException if transaction is not valid
+     */
+    public void addTransaction(String transactionId,
+                               int amount,
+                               int fee,
+                               String payload,
+                               String payerId,
+                               String receiverId) throws LedgerException {
+        Transaction transaction = new Transaction(transactionId,
+                                                    amount,
+                                                    fee,
+                                                    payload,
+                                                    new Account(payerId),
+                                                    new Account(receiverId));
+        processTransaction(transaction);
     }
 
     /**
@@ -182,7 +210,7 @@ class Ledger {
      * @return committed balance
      * @throws LedgerException if account doesn't exist or account has no committed balance
      */
-    int getAccountBalance(String address) throws LedgerException {
+    public int getAccountBalance(String address) throws LedgerException {
         try {
             return currentBlock.getAccountBalanceMap().get(address).getBalance();
         }

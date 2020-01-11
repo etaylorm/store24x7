@@ -110,7 +110,7 @@ class Block {
         for (Account account : accountBalanceMap.values()){
             accountSum += account.getBalance();
         }
-        if (accountSum != Integer.MAX_VALUE | transactionList.size() != 10){
+        if (accountSum != Integer.MAX_VALUE | transactionList.size() != 1){
             throw new LedgerException("validate", "block is not valid");
         }
     }

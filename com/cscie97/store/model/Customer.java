@@ -1,5 +1,15 @@
-import java.time.LocalTime;
+package com.cscie97.store.model;
 
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+/**
+ * Customer is a representation of a single customer that is known
+ * to the 24x7 store system. Customers can be registered or guests and can
+ * shop at any of the 24x7 stores with their associated payment account.
+ * Customers have associated baskets with items that they intend to purchase.
+ */
 public class Customer {
 	private String id;
 	private String firstName;
@@ -7,41 +17,98 @@ public class Customer {
 	private String type;
 	private String email;
 	private String accountId;
-	private String location;
-	public LocalTime lastSeen;
+	private Location location;
+	private LocalTime lastSeen;
 	private Basket basket;
 
-	public Customer(String id, String firstName, String lastName, String type, String email, String accountId){
+	public Customer(String id, String firstName, String lastName, String type, String email, String accountId) throws StoreModelServiceException {
 		this.id = id;
 		this.firstName = firstName;
 		this.lastName = lastName;
-		this.type = type;
 		this.email = email;
 		this.accountId = accountId;
-	}
 
-	public String getBasket(){
-		if (basket == null){
-			basket = new Basket("basket_" + id);
+		ArrayList<String> types = new ArrayList<>(Arrays.asList("registered", "guest")); // customers can be registered or guests
+
+		if (types.contains(type)){
+			this.type = type;
+		} else {
+			throw new StoreModelServiceException("defineCustomer", "customer type not recognized");
 		}
-		return basket.getId();
 	}
 
-	public void updateLocation(String location){
+	/**
+	 * Returns the customer's basket (of which the customer can have one at a time)
+	 * or creates a new basket for the customer
+	 * @return
+	 */
+	Basket getBasket(){
+		if (basket == null & type.equals("registered")){
+			createBasket();
+		}
+		return basket;
+	}
+
+	/**
+	 * Clears the customer's association with their basket
+	 */
+	void clearBasket(){
+		basket = null;
+	}
+
+	/**
+	 * Creates a new basket for the customer
+	 */
+	private void createBasket(){
+		basket = new Basket("basket_" + id);
+	}
+
+	/**
+	 * Updates the customer's current location
+	 * and updates the timestamp of when they were last seen
+	 * @param location
+	 */
+	void updateLocation(Location location){
 		this.location = location;
 		lastSeen = LocalTime.now();
 	}
 
-//	public void addToBasket(String productId, int count) {
-//		basket.addProduct(productId, count);
-//	}
-//
-//	public void removeFromBasket(String productId, int count) {
-//		basket.removeProduct(productId, count);
-//	}
-//
-//	public HashMap<String, Integer> getBasketItems(){
-//		return basket.getBasketItems()
-//	}
+	/**
+	 * Getter for the customer's location
+	 * @return location of the customer
+	 */
+	Location getLocation(){
+		return location;
+	}
 
+	/**
+	 * Getter for the time the customer was last seen
+	 * @return timestamp that the customer was last seen
+	 */
+	LocalTime getLastSeen(){
+		return lastSeen;
+	}
+
+	/**
+	 * Show information about the customer
+	 * @return informational string
+	 */
+	String show(){
+		String info = "\nid: " + id +
+				"\nname: " + firstName + " " + lastName +
+				"\nlocation: " + location +
+				"\ntype: " + type +
+				"\nemail: " + email +
+				"\naccount: " + accountId +
+				"\nbasket: ";
+
+		if(basket != null){
+			info += basket.show();
+		} else {
+			info += "no basket";
+		}
+		info += "\n";
+
+		return info;
+	}
 }
