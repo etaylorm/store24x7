@@ -1,5 +1,5 @@
-# ledger
-Software Design Assignment 1
+# Store 24x7 Project
+Software Design Assignments 1, 2, 3
 Evelyn Taylor-McGregor
 
 Running using:
